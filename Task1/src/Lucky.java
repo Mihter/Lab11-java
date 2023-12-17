@@ -1,24 +1,24 @@
+import java.util.concurrent.atomic.AtomicInteger;
+
 public class Lucky
 {
-    static volatile StatObject x = new StatObject(0);
-    static volatile StatObject count = new StatObject(0);
+    private static AtomicInteger x = new AtomicInteger(0);
+    private static AtomicInteger count = new AtomicInteger(0);
 
     static class LuckyThread extends Thread
     {
         @Override
         public void run()
         {
-            while (x.lessThan(999999))
+            int temp;
+            while ((temp = x.getAndIncrement()) < 999999)
             {
-                x.increment();
-                if ((x.get() % 10) + (x.get() / 10) % 10 + (x.get() / 100) % 10 == (x.get() / 1000)
-                        % 10 + (x.get() / 10000) % 10 + (x.get() / 100000) % 10)
+                if ((temp % 10) + (temp / 10) % 10 + (temp / 100) % 10 == (temp / 1000)
+                        % 10 + (temp / 10000) % 10 + (temp / 100000) % 10)
                 {
-                    //System.out.println(x);
-                    count.increment();
+                    System.out.println(temp);
+                    count.getAndIncrement();
                 }
-                System.out.println(this.getName());
-                System.out.println(x.get());
             }
         }
     }
@@ -34,6 +34,6 @@ public class Lucky
         t1.join();
         t2.join();
         t3.join();
-        System.out.println("Total: " + count.get() + " " + x.get());
+        System.out.println("Total: " + count);
     }
 }

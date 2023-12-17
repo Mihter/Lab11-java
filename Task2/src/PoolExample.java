@@ -1,9 +1,10 @@
-import java.util.List;
-import java.util.concurrent.*;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
-public class PoolExample
-{
+public class PoolExample {
+
     public static void main(String[] args) throws InterruptedException
     {
 
@@ -20,57 +21,30 @@ public class PoolExample
         AtomicInteger inProgress = new AtomicInteger(0);
 
         // отправляем задачи на выполнение
-        for (int i = 0; i < 10; i++)
+        for (int i = 0; i < 30;)
         {
-            final int number = i * 3;
-
-            for(int j = number; j < number + executor.getMaximumPoolSize(); j++)
+            if (inProgress.get() < executor.getMaximumPoolSize())
             {
-                final int taskNumber = j;
+                inProgress.incrementAndGet();
+                final int number = i++;
+                Thread.sleep(10);
 
-                System.out.println("creating #" + taskNumber);
-                Future<Object> task = executor.submit(() ->
-                {
-                    int working = inProgress.incrementAndGet();
-                    System.out.println("start #" + taskNumber + ", in progress: " + working);
+                System.out.println("creating #" + number);
+                executor.submit(() -> {
+                    int working = inProgress.get();
+                    System.out.println("start #" + number + ", in progress: " + working);
                     try {
                         // тут какая-то полезная работа
                         Thread.sleep(Math.round(1000 + Math.random() * 2000));
-                    } catch (InterruptedException e)
-                    {
+                    } catch (InterruptedException e) {
                         // ignore
                     }
                     working = inProgress.decrementAndGet();
-                    System.out.println("end #" + taskNumber + ", in progress: " + working + ", done tasks: " + count.incrementAndGet());
+                    System.out.println("end #" + number + ", in progress: " + working + ", done tasks: " + count.incrementAndGet());
                     return null;
                 });
-                AwaitAnyTaskCompletion(executor.getQueue());
             }
         }
         executor.shutdown();
-    }
-
-    private static void AwaitAnyTaskCompletion(BlockingQueue<?> queue)
-    {
-        while(queue.remainingCapacity() == 0);
-    }
-
-    private static void AwaitAnyTaskCompletion(List<Future<?>> futures, int maxCount)
-    {
-        if(futures.size() < maxCount)
-            return;
-
-        while(true)
-        {
-            for(int i = 0; i < futures.size(); i++)
-            {
-                Future<?> future = futures.get(i);
-                if(future.isDone())
-                {
-                    futures.remove(i);
-                    return;
-                }
-            }
-        }
     }
 }
